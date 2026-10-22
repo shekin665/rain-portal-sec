@@ -38,6 +38,11 @@ CREATE TABLE IF NOT EXISTS roster (
   email TEXT NOT NULL,
   name TEXT
 );
+CREATE TABLE IF NOT EXISTS staff_roster (
+  email TEXT PRIMARY KEY,
+  name TEXT,
+  role TEXT NOT NULL CHECK (role IN ('coordinator','transport','principal'))
+);
 CREATE TABLE IF NOT EXISTS reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id),

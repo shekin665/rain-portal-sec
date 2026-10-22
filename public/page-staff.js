@@ -226,6 +226,25 @@
           onclick: async () => { await api(`/api/admin/staff/${s.id}/active`, { method: 'POST', body: { active: !s.active } }); select('admin'); } })])),
       h('h3', { text: 'Add an account' }), sForm));
 
+    // approved staff list (staff then register themselves on the staff registration page)
+    const stCsv = h('textarea', { id: 'sr-csv', placeholder: 'email,Name,role' });
+    const srMsg = h('div');
+    const srForm = h('form', { novalidate: true }, field('Approved staff list', stCsv, 'One per line: email, name, role (coordinator, transport or principal). Importing again updates the rows.'),
+      srMsg, h('button', { class: 'btn', type: 'submit', text: 'Save staff list' }));
+    srForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      try {
+        const r = await api('/api/admin/staff-roster', { method: 'POST', body: { csv: stCsv.value } });
+        showMsg(srMsg, 'ok', `Saved ${r.imported} staff.${r.skipped.length ? ` Skipped ${r.skipped.length} invalid line(s).` : ''}`);
+        stCsv.value = ''; setTimeout(() => select('admin'), 800);
+      } catch (e) { showMsg(srMsg, 'error', e.message); }
+    });
+    el.append(h('div', { class: 'card' }, h('h2', { text: 'Approved staff list' }),
+      h('p', { class: 'small muted', text: 'Teachers and officers register themselves at /staff-register.html. They can register only if their email is on this list, and they get the role listed here.' }),
+      users.staffRoster.length ? table(['Email', 'Name', 'Role', ''], users.staffRoster.map(x => [x.email, x.name || '-', LABELS.role[x.role],
+        h('button', { class: 'btn small secondary', type: 'button', text: 'Remove', onclick: async () => { await api('/api/admin/staff-roster/remove', { method: 'POST', body: { email: x.email } }); select('admin'); } })])) : h('p', { class: 'muted', text: 'No one is on the list yet.' }),
+      srForm));
+
     // roster
     const csv = h('textarea', { id: 'ro-csv', placeholder: 'REGISTER_NO,email,Name' });
     const rMsg = h('div');

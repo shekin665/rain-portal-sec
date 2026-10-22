@@ -99,7 +99,7 @@ async function renderHeader(active) {
   const link = (href, text, key) => h('a', { href, text, 'aria-current': key === active ? 'page' : false });
   nav.append(link('/', 'Today', 'home'));
   if (!user) {
-    nav.append(link('/login.html', 'Student sign in', 'login'), link('/staff-login.html', 'Staff sign in', 'stafflogin'), link('/register.html', 'Student registration', 'register'));
+    nav.append(link('/login.html', 'Student sign in', 'login'), link('/staff-login.html', 'Staff sign in', 'stafflogin'), link('/register.html', 'Student registration', 'register'), link('/staff-register.html', 'Staff registration', 'staffregister'));
   } else {
     if (user.role === 'student') nav.append(link('/student.html', 'Report', 'student'));
     else nav.append(link('/staff.html', 'Dashboard', 'staff'));

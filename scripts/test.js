@@ -87,6 +87,17 @@ async function main() {
   ok((await call('POST', '/api/login', { email: 'student1@demo.test', password: pw })).status === 400, 'sign-in without a portal is refused');
   ok((await call('POST', '/api/login', { email: 'admin@demo.test', password: 'wrong', portal: 'student' })).status === 401, 'wrong password on the wrong portal does not reveal the account type');
 
+  // staff registration: only emails on the approved list, role from the list
+  const regStaff = (email) => call('POST', '/api/register-staff', { name: 'New Teacher', email, password: 'a-long-password-1' });
+  ok((await regStaff('teacher@demo.test')).status === 403, 'staff registration refuses an email that is not on the approved list');
+  ok((await call('POST', '/api/admin/staff-roster', { csv: 'teacher@demo.test,New Teacher,coordinator' }, student)).status === 403, 'students cannot edit the approved staff list');
+  const imp = await call('POST', '/api/admin/staff-roster', { csv: 'teacher@demo.test,New Teacher,coordinator\nboss@demo.test,Boss,admin\nbad line' }, admin);
+  ok(imp.json.imported === 1 && imp.json.skipped.length === 2, 'staff list import accepts valid lines and skips admin or malformed ones');
+  const reg1 = await regStaff('teacher@demo.test');
+  ok(reg1.status === 200 && reg1.json.user.role === 'coordinator', 'listed teacher registers and gets the listed role');
+  ok((await regStaff('teacher@demo.test')).status === 409, 'second registration for the same email is refused');
+  ok((await regStaff('boss@demo.test')).status === 403, 'nobody can register as administrator');
+
   // access control
   ok((await call('GET', '/api/staff/overview')).status === 401, 'staff overview needs sign-in');
   ok((await call('GET', '/api/staff/overview', null, student)).status === 403, 'students cannot open staff overview');

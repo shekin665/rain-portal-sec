@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff registration | SRM Easwari Engineering College</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<main>
+  <section class="card" aria-labelledby="h">
+    <h1 id="h">Staff registration</h1>
+    <p class="muted">For the portal coordinator, transport in-charge and principal. Your email must be on the approved staff list kept by the portal administrator. Your role is set from that list.</p>
+    <form id="form" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="name">Full name</label><input id="name" autocomplete="name" required></div>
+        <div class="field"><label for="email">College email</label><input id="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="department">Department or office</label><input id="department"></div>
+        <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" minlength="10" required><span class="hint">At least 10 characters.</span></div>
+      </div>
+      <div id="msg"></div>
+      <button class="btn" type="submit">Register</button>
+    </form>
+    <p class="small muted">Already registered? <a href="/staff-login.html">Staff sign in</a>. Students register <a href="/register.html">here</a>.</p>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="/app.js"></script>
+<script src="/rain.js"></script>
+<script src="/page-register-staff.js"></script>
+</body>
+</html>

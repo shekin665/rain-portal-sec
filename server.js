@@ -173,6 +173,28 @@ route('GET', '/api/config', async () => {
   return { areas: s.areas, travelModes: TRAVEL_MODES, issues: ISSUES, severity: s.severity, areaClass: s.areaClass, levels: LEVELS };
 });
 
+// Staff register themselves only if the administrator has listed their email and role.
+route('POST', '/api/register-staff', async (req, res) => {
+  const b = await readJSON(req);
+  const email = str(b.email).toLowerCase();
+  const password = typeof b.password === 'string' ? b.password : '';
+  const name = str(b.name, 100);
+  if (!isEmail(email)) throw bad('Enter your college email.');
+  if (!name) throw bad('Enter your name.');
+  if (password.length < 10) throw bad('Staff passwords need at least 10 characters.');
+  throttle(`${clientIp(req)}|reg|${email}`);
+  const row = db.prepare('SELECT * FROM staff_roster WHERE email = ?').get(email);
+  if (!row) throw new HttpError(403, 'This email is not on the approved staff list. Ask the portal administrator to add it.');
+  if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw new HttpError(409, 'An account already exists for this email. Sign in instead.');
+  const { salt, hash } = makePassword(password);
+  const info = db.prepare('INSERT INTO users(email,name,role,department,pass_salt,pass_hash) VALUES(?,?,?,?,?,?)')
+    .run(email, name, row.role, str(b.department, 60) || null, salt, hash);
+  audit(Number(info.lastInsertRowid), 'register_staff', `${row.role} ${email}`);
+  const cookie = createSession(res, Number(info.lastInsertRowid));
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+  return [{ user: publicUser(user) }, { 'Set-Cookie': cookie }];
+});
+
 route('POST', '/api/register', async (req, res) => {
   const b = await readJSON(req);
   const email = str(b.email).toLowerCase();
@@ -467,7 +489,8 @@ route('GET', '/api/admin/users', async (req) => {
   ).all();
   const students = db.prepare("SELECT COUNT(*) AS n FROM users WHERE role='student'").get().n;
   const roster = db.prepare('SELECT COUNT(*) AS n FROM roster').get().n;
-  return { staff: users, students, roster };
+  const staffRoster = db.prepare('SELECT email, name, role FROM staff_roster ORDER BY role, email').all();
+  return { staff: users, students, roster, staffRoster };
 });
 
 route('POST', '/api/admin/staff', async (req) => {
@@ -520,6 +543,31 @@ route('POST', '/api/admin/roster', async (req) => {
   } catch (e) { db.exec('ROLLBACK'); throw e; }
   audit(u.id, 'import_roster', `${ok} rows, ${skipped.length} skipped`);
   return { imported: ok, skipped };
+});
+
+// Approved staff list: one per line, "email,Name,role" where role is coordinator, transport or principal.
+route('POST', '/api/admin/staff-roster', async (req) => {
+  const u = requireUser(req, ['admin']);
+  const b = await readJSON(req);
+  const lines = String(b.csv || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const ins = db.prepare('INSERT INTO staff_roster(email,name,role) VALUES(?,?,?) ON CONFLICT(email) DO UPDATE SET name=excluded.name, role=excluded.role');
+  let ok = 0; const skipped = [];
+  for (const line of lines) {
+    const parts = line.split(',').map(x => x.trim());
+    const email = (parts[0] || '').toLowerCase(), role = (parts[parts.length - 1] || '').toLowerCase();
+    if (!isEmail(email) || !['coordinator', 'transport', 'principal'].includes(role) || parts.length < 2) { skipped.push(line.slice(0, 60)); continue; }
+    ins.run(email, parts.length > 2 ? parts.slice(1, -1).join(',') : null, role); ok++;
+  }
+  audit(u.id, 'import_staff_roster', `${ok} rows, ${skipped.length} skipped`);
+  return { imported: ok, skipped };
+});
+
+route('POST', '/api/admin/staff-roster/remove', async (req) => {
+  const u = requireUser(req, ['admin']);
+  const b = await readJSON(req);
+  db.prepare('DELETE FROM staff_roster WHERE email = ?').run(str(b.email).toLowerCase());
+  audit(u.id, 'remove_staff_roster', str(b.email));
+  return { ok: true };
 });
 
 route('GET', '/api/admin/settings', async (req) => {
