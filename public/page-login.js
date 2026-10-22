@@ -1,6 +1,7 @@
 'use strict';
 (async function () {
   const portal = document.body.dataset.portal === 'staff' ? 'staff' : 'student';
+  $('#login-logo').append(logoSlot());
   const user = await renderHeader(portal === 'staff' ? 'stafflogin' : 'login');
   if (user) { location.href = user.role === 'student' ? '/student.html' : '/staff.html'; return; }
   $('#form').addEventListener('submit', async (ev) => {

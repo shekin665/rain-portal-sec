@@ -634,7 +634,7 @@ function serveStatic(req, res) {
   if (!file.startsWith(PUBLIC_DIR + path.sep)) return send(res, 403, 'Forbidden');
   fs.stat(file, (err, st) => {
     // No logo file yet: answer "no content" so the header shows its text mark without a browser error.
-    if ((err || !st.isFile()) && p === '/logo.png') { res.writeHead(204); return res.end(); }
+    if ((err || !st.isFile()) && (p === '/logo.png' || p === '/campus.jpg')) { res.writeHead(204); return res.end(); }
     if (err || !st.isFile()) return send(res, 404, 'Not found');
     res.writeHead(200, {
       'Content-Type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
