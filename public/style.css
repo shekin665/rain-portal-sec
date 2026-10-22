@@ -134,8 +134,7 @@ ul.plain li:last-child { border-bottom: none; }
 @media print { .rain-canvas, .rain-flash, .rain-controls { display: none !important; } .card { background: #fff; } }
 
 /* Sign-in pages: campus photo (public/campus.jpg, supplied by the college) behind a centred card. */
-body.login-page { background: linear-gradient(160deg, #1d3f6e, #12294a) center / cover fixed; }
-body.login-page.has-photo, body.login-page { background-image: linear-gradient(rgba(10,25,50,.35), rgba(10,25,50,.35)), url(/campus.jpg), linear-gradient(160deg, #1d3f6e, #12294a); background-size: cover; background-position: center; background-attachment: fixed; }
+body.login-page, body.home-page { background-image: linear-gradient(rgba(10,25,50,.35), rgba(10,25,50,.35)), url(/campus.jpg), linear-gradient(160deg, #1d3f6e, #12294a); background-size: cover; background-position: center; background-attachment: fixed; }
 body.login-page main { display: flex; justify-content: center; padding-top: 2rem; padding-bottom: 2rem; }
 .login-card { width: 100%; max-width: 400px; background: rgba(12,32,60,.88); border-color: rgba(255,255,255,.25); color: #fff; text-align: left; }
 .login-card h1, .login-card label { color: #fff; }
@@ -146,6 +145,26 @@ body.login-page main { display: flex; justify-content: center; padding-top: 2rem
 .login-card .logo-slot img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
 .login-card .login-college { text-align: center; letter-spacing: .08em; text-transform: uppercase; font-size: .9rem; margin: 0 0 1rem; color: #fff; }
 .login-card button.btn { width: 100%; background: #1b8fd1; border-color: #1b8fd1; }
-body.login-page .footer { color: #e6edf7; border-color: rgba(255,255,255,.3); }
+body.login-page .footer, body.home-page .footer { color: #e6edf7; border-color: rgba(255,255,255,.3); }
 .login-card .logo-slot { border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .login-card .logo-slot .mono { font-family: Georgia, serif; font-weight: 700; color: var(--navy); font-size: 1.6rem; }
+
+/* Home page: campus photo behind glass-style panels. */
+.home-page .hero { color: #fff; text-align: center; padding: 1.5rem 0 1rem; text-shadow: 0 2px 8px rgba(0,0,0,.45); }
+.home-page .hero h1 { color: #fff; font-size: 2.2rem; margin: 0; }
+.home-page .hero p { margin: .25rem 0 0; font-size: 1.05rem; }
+.panel { background: rgba(255,255,255,.93); border-radius: 12px; border-top: 4px solid var(--gold); padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; box-shadow: 0 6px 24px rgba(10,25,50,.3); }
+.panel h2 { margin-bottom: .9rem; }
+.sched-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.sched-box { background: #f3f6fb; border: 1px solid var(--line); border-radius: 10px; padding: 1rem; }
+.sched-box h3 { font-size: 1rem; color: var(--navy); margin: 0 0 .6rem; padding-bottom: .4rem; border-bottom: 2px solid var(--gold); }
+.sched-item + .sched-item { margin-top: .8rem; padding-top: .8rem; border-top: 1px dashed var(--line); }
+.sched-item p { margin: .2rem 0; font-size: .95rem; }
+.when { display: block; color: var(--muted); font-size: .8rem; }
+.empty { color: var(--muted); margin: 0; }
+.notice-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; }
+.notice { border-left: 5px solid var(--navy-2); background: #f7f9fc; border-radius: 8px; padding: .8rem 1rem; }
+.notice h3 { margin: .35rem 0 .2rem; font-size: 1.1rem; }
+.notice p { margin: 0 0 .3rem; }
+.chip { display: inline-block; background: var(--navy); color: #fff; border-radius: 999px; padding: .12rem .7rem; font-size: .75rem; letter-spacing: .04em; }
+body.login-page, body.home-page { background-color: #1d3f6e; }
