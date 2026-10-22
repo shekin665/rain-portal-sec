@@ -3,21 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in | SRM Easwari Engineering College</title>
+<title>Student sign in | SRM Easwari Engineering College</title>
 <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body data-portal="student">
 <div id="site-header"></div>
 <main>
   <section class="card" aria-labelledby="h">
-    <h1 id="h">Sign in</h1>
-    <p class="muted">Students sign in with the college email. Staff use the account created for them by the portal administrator.</p>
+    <h1 id="h">Student sign in</h1>
+    <p class="muted">Sign in with your college email and the password you set when you registered.</p>
     <form id="form" novalidate>
       <div class="field"><label for="email">College email</label><input id="email" type="email" autocomplete="username" required></div>
       <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
       <div id="msg"></div>
       <button class="btn" type="submit">Sign in</button>
     </form>
+    <p class="small muted">Faculty, transport office, principal or administrator? <a href="/staff-login.html">Staff sign in</a>.</p>
     <p class="small muted">New student? <a href="/register.html">Register with your register number</a>.</p>
   </section>
 </main>

@@ -229,6 +229,14 @@ route('POST', '/api/login', async (req, res) => {
     audit(null, 'login_failed', email);
     throw new HttpError(401, 'Email or password is incorrect.');
   }
+  // Students and staff have separate sign-in pages. Checked only after the password is right.
+  const portal = b.portal === 'staff' ? 'staff' : b.portal === 'student' ? 'student' : '';
+  if (!portal) throw bad('Use the student or staff sign-in page.');
+  if ((user.role === 'student') !== (portal === 'student')) {
+    throw new HttpError(403, user.role === 'student'
+      ? 'This is the staff sign-in. Students sign in on the student sign-in page.'
+      : 'This is the student sign-in. Staff and administrators use the staff sign-in page.');
+  }
   attempts.delete(`${clientIp(req)}|${email}`);
   audit(user.id, 'login', user.role);
   return [{ user: publicUser(user) }, { 'Set-Cookie': createSession(res, user.id) }];

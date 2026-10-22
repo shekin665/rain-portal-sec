@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff sign in | SRM Easwari Engineering College</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body data-portal="staff">
+<div id="site-header"></div>
+<main>
+  <section class="card" aria-labelledby="h">
+    <h1 id="h">Staff sign in</h1>
+    <p class="muted">For the portal coordinator, transport in-charge, principal and administrator. Your account is created by the portal administrator.</p>
+    <form id="form" novalidate>
+      <div class="field"><label for="email">Staff email</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <div id="msg"></div>
+      <button class="btn" type="submit">Sign in</button>
+    </form>
+    <p class="small muted">Student? <a href="/login.html">Student sign in</a>.</p>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="/app.js"></script>
+<script src="/rain.js"></script>
+<script src="/page-login.js"></script>
+</body>
+</html>

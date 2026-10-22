@@ -99,7 +99,7 @@ async function renderHeader(active) {
   const link = (href, text, key) => h('a', { href, text, 'aria-current': key === active ? 'page' : false });
   nav.append(link('/', 'Today', 'home'));
   if (!user) {
-    nav.append(link('/login.html', 'Sign in', 'login'), link('/register.html', 'Student registration', 'register'));
+    nav.append(link('/login.html', 'Student sign in', 'login'), link('/staff-login.html', 'Staff sign in', 'stafflogin'), link('/register.html', 'Student registration', 'register'));
   } else {
     if (user.role === 'student') nav.append(link('/student.html', 'Report', 'student'));
     else nav.append(link('/staff.html', 'Dashboard', 'staff'));
@@ -133,7 +133,7 @@ async function renderHeader(active) {
 // Pages that need a signed-in user. Redirects to sign-in otherwise.
 async function requireRole(active, roles) {
   const user = await renderHeader(active);
-  if (!user) { location.href = '/login.html'; return null; }
+  if (!user) { location.href = roles && !roles.includes('student') ? '/staff-login.html' : '/login.html'; return null; }
   if (roles && !roles.includes(user.role)) { location.href = '/'; return null; }
   const main = $('main');
   if (main) main.hidden = false; // protected pages stay hidden until sign-in is confirmed

@@ -71,13 +71,21 @@ async function main() {
     let json; try { json = JSON.parse(text); } catch { json = text; }
     return { status: r.status, json, cookie: (r.headers.get('set-cookie') || '').split(';')[0] };
   }
-  const login = async (email) => (await call('POST', '/api/login', { email, password: 'Demo-Pass-2026' })).cookie;
+  const login = async (email) => (await call('POST', '/api/login', { email, password: 'Demo-Pass-2026', portal: email.startsWith('student') ? 'student' : 'staff' })).cookie;
 
   const coord = await login('coordinator@demo.test');
   const principal = await login('principal@demo.test');
   const transport = await login('transport@demo.test');
   const admin = await login('admin@demo.test');
   const student = await login('student1@demo.test');
+
+  // separate sign-in for students and staff
+  const pw = 'Demo-Pass-2026';
+  ok((await call('POST', '/api/login', { email: 'student1@demo.test', password: pw, portal: 'staff' })).status === 403, 'a student cannot sign in on the staff sign-in');
+  ok((await call('POST', '/api/login', { email: 'admin@demo.test', password: pw, portal: 'student' })).status === 403, 'the administrator cannot sign in on the student sign-in');
+  ok((await call('POST', '/api/login', { email: 'coordinator@demo.test', password: pw, portal: 'student' })).status === 403, 'staff cannot sign in on the student sign-in');
+  ok((await call('POST', '/api/login', { email: 'student1@demo.test', password: pw })).status === 400, 'sign-in without a portal is refused');
+  ok((await call('POST', '/api/login', { email: 'admin@demo.test', password: 'wrong', portal: 'student' })).status === 401, 'wrong password on the wrong portal does not reveal the account type');
 
   // access control
   ok((await call('GET', '/api/staff/overview')).status === 401, 'staff overview needs sign-in');
@@ -189,12 +197,12 @@ async function main() {
 
   // sign-in throttle
   let last;
-  for (let i = 0; i < 7; i++) last = await call('POST', '/api/login', { email: 'student2@demo.test', password: 'wrong-password' });
+  for (let i = 0; i < 7; i++) last = await call('POST', '/api/login', { email: 'student2@demo.test', password: 'wrong-password', portal: 'student' });
   ok(last.status === 429, 'repeated wrong passwords are throttled');
 
   // hosting support
   ok((await fetch(base + '/healthz')).status === 200, 'health check answers');
-  const spoof = (ip) => fetch(base + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: JSON.stringify({ email: 'student5@demo.test', password: 'bad-password-1' }) });
+  const spoof = (ip) => fetch(base + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: JSON.stringify({ email: 'student5@demo.test', password: 'bad-password-1', portal: 'student' }) });
   let st; for (let i = 0; i < 8; i++) st = (await spoof('9.9.9.' + i)).status;
   ok(st === 429, 'X-Forwarded-For is ignored unless TRUST_PROXY=1 (header cannot dodge the throttle)');
 
@@ -204,8 +212,8 @@ async function main() {
   ok((await call('POST', '/api/password', { current: 'Demo-Pass-2026', next: 'short' }, pcs)).status === 400, 'short new password refused');
   ok((await call('POST', '/api/password', { current: 'Demo-Pass-2026', next: 'brand-new-pass1' })).status === 401, 'password change needs sign-in');
   ok((await call('POST', '/api/password', { current: 'Demo-Pass-2026', next: 'brand-new-pass1' }, pcs)).status === 200, 'student changes own password');
-  ok((await call('POST', '/api/login', { email: 'student7@demo.test', password: 'Demo-Pass-2026' })).status === 401, 'old password no longer works');
-  ok((await call('POST', '/api/login', { email: 'student7@demo.test', password: 'brand-new-pass1' })).status === 200, 'new password works');
+  ok((await call('POST', '/api/login', { email: 'student7@demo.test', password: 'Demo-Pass-2026', portal: 'student' })).status === 401, 'old password no longer works');
+  ok((await call('POST', '/api/login', { email: 'student7@demo.test', password: 'brand-new-pass1', portal: 'student' })).status === 200, 'new password works');
   ok((await call('GET', '/api/me', null, pcs)).json.user !== null, 'the device that changed it stays signed in');
 
   // static + headers
