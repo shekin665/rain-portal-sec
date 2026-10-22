@@ -115,8 +115,7 @@ async function renderHeader(active) {
       h('a', { class: 'brand', href: '/', 'aria-label': `${COLLEGE}, Rainy Season Commute Safety Portal` },
         logoSlot(),
         h('span', { class: 'names' },
-          h('span', { class: 'college', text: COLLEGE }),
-          h('span', { class: 'sub', text: 'Rainy Season Commute Safety Portal' }))),
+          h('span', { class: 'college', text: COLLEGE }))),
       nav));
   const mount = $('#site-header');
   mount.replaceWith(header);
