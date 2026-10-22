@@ -130,7 +130,11 @@
         fmtTime(r.created_at),
         h('div', null, h('strong', { text: r.name }), h('div', { class: 'small muted', text: `${r.register_no} · ${r.department || '-'} year ${r.year || '-'}` })),
         r.area || '-', r.route, LABELS.issue[r.issue] || r.issue, LABELS.mode[r.mode] || r.mode,
-        r.has_photo ? h('a', { href: `/api/staff/photo/${r.id}`, target: '_blank', rel: 'noopener', text: 'View photo' }) : 'None',
+        r.has_photo ? h('div', null,
+          h('a', { href: `/api/staff/photo/${r.id}`, target: '_blank', rel: 'noopener', text: 'View photo' }),
+          h('div', { class: 'small', text: PHOTO_LABEL[r.photo_status] || 'Not checked' }),
+          r.photo_lat != null ? h('div', { class: 'small muted', text: `Location ${r.photo_lat}, ${r.photo_lon}` }) : null,
+          r.photo_notes ? h('div', { class: 'small muted', text: r.photo_notes }) : null) : 'None',
         r.note || '', actionCell
       ];
     });

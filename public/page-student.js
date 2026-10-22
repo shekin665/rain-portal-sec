@@ -29,7 +29,7 @@
     box.append(table(['Date', 'Route', 'Issue', 'Mode', 'Photo', 'Status'],
       reports.map(r => [
         fmtDate(r.report_date), r.route, LABELS.issue[r.issue] || r.issue, LABELS.mode[r.mode] || r.mode,
-        r.has_photo ? 'Yes' : 'No', r.status === 'removed' ? 'Removed by coordinator' : 'Counted'
+        r.has_photo ? (PHOTO_LABEL[r.photo_status] || 'Yes') : 'No', r.status === 'removed' ? 'Removed by coordinator' : 'Counted'
       ])));
   }
 
@@ -39,9 +39,12 @@
     try {
       const file = $('#photo').files[0];
       const body = { route: $('#route').value, mode: $('#mode').value, issue: $('#issue').value, note: $('#note').value };
-      if (file) body.photo = await readPhoto(file);
-      await api('/api/reports', { method: 'POST', body });
-      showMsg(msg, 'ok', 'Report submitted. Thank you.');
+      if (file) { const ph = await readPhoto(file); body.photo = ph.photo; body.photo_meta = ph.meta; }
+      const out = await api('/api/reports', { method: 'POST', body });
+      let text = 'Report submitted. Thank you.';
+      if (out.photo_status === 'verified') text += ' Your photo was verified.';
+      else if (out.photo_status === 'unverified') text += ' Your photo was accepted but could not be verified: ' + out.photo_notes.join('; ') + '.';
+      showMsg(msg, 'ok', text);
       $('#note').value = ''; $('#photo').value = ''; $('#issue').value = '';
       await loadMine();
     } catch (e) {

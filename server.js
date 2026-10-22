@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { db, DATA_DIR, getSettings, setSetting, audit } = require('./db');
+const { checkPhoto } = require('./exif');
 const { LEVELS, today, dayAnalysis, checkConfirm, areaAnalysis } = require('./logic');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -293,17 +294,28 @@ route('POST', '/api/reports', async (req) => {
   const day = today();
   const exists = db.prepare('SELECT 1 FROM reports WHERE user_id=? AND route=? AND report_date=?').get(u.id, routeName, day);
   if (exists) throw new HttpError(409, 'You have already reported this route today.');
+  // Photo check: the page sends the camera data (EXIF and similar) read from the original file,
+  // because the shrunk copy no longer has it. See exif.js for what this can and cannot prove.
+  let check = null;
+  if (b.photo) {
+    const metaB64 = typeof b.photo_meta === 'string' && b.photo_meta.length <= 300_000 && /^[A-Za-z0-9+/=]*$/.test(b.photo_meta) ? b.photo_meta : '';
+    check = metaB64
+      ? checkPhoto(Buffer.from(metaB64, 'base64'), s.photoCheck, Date.now())
+      : { status: 'unverified', notes: ['No camera data in the photo (screenshots, downloaded pictures and PNG files have none)'], lat: null, lon: null, taken: null };
+    if (check.status === 'rejected') throw bad('This photo cannot be used. ' + check.notes.join('. ') + '. Take a new photo with your phone camera.');
+  }
   const photo = b.photo ? savePhoto(b.photo) : null;
   const info = db.prepare(
-    'INSERT INTO reports(user_id,route,mode,issue,note,photo,report_date) VALUES(?,?,?,?,?,?,?)'
-  ).run(u.id, routeName, str(b.mode, 20), str(b.issue, 30), str(b.note, 500) || null, photo, day);
-  return { id: Number(info.lastInsertRowid), report_date: day };
+    'INSERT INTO reports(user_id,route,mode,issue,note,photo,report_date,photo_status,photo_notes,photo_lat,photo_lon,photo_taken) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)'
+  ).run(u.id, routeName, str(b.mode, 20), str(b.issue, 30), str(b.note, 500) || null, photo, day,
+    check ? check.status : null, check ? check.notes.join('; ') || null : null, check ? check.lat : null, check ? check.lon : null, check ? check.taken : null);
+  return { id: Number(info.lastInsertRowid), report_date: day, photo_status: check ? check.status : null, photo_notes: check ? check.notes : [] };
 });
 
 route('GET', '/api/reports/mine', async (req) => {
   const u = requireUser(req, ['student']);
   const rows = db.prepare(
-    'SELECT id, route, mode, issue, note, photo IS NOT NULL AS has_photo, report_date, created_at, status FROM reports WHERE user_id=? ORDER BY id DESC LIMIT 30'
+    'SELECT id, route, mode, issue, note, photo IS NOT NULL AS has_photo, photo_status, report_date, created_at, status FROM reports WHERE user_id=? ORDER BY id DESC LIMIT 30'
   ).all(u.id);
   return { reports: rows };
 });
@@ -320,7 +332,7 @@ route('GET', '/api/staff/overview', async (req) => {
   let reports = [];
   if (u.role === 'coordinator') {
     reports = db.prepare(
-      `SELECT r.id, r.route, r.mode, r.issue, r.note, r.photo IS NOT NULL AS has_photo, r.created_at, r.status, r.removed_reason,
+      `SELECT r.id, r.route, r.mode, r.issue, r.note, r.photo IS NOT NULL AS has_photo, r.photo_status, r.photo_notes, r.photo_lat, r.photo_lon, r.photo_taken, r.created_at, r.status, r.removed_reason,
               u.name, u.register_no, u.department, u.year, u.area
        FROM reports r JOIN users u ON u.id = r.user_id WHERE r.report_date = ? ORDER BY r.id DESC`
     ).all(day);

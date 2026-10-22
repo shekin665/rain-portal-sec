@@ -154,7 +154,25 @@ function table(headers, rows, opts) {
   return h('div', { class: 'table-wrap' }, t);
 }
 
-// Reads a photo, shrinks it to at most 1280 px, and returns a JPEG data URL.
+// Copies the camera data (everything before the picture itself) out of a JPEG, as base64.
+// The server uses it to check the photo; the shrunk copy sent as the picture has none of it.
+function jpegMeta(bytes) {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return '';
+  let p = 2;
+  while (p + 4 <= bytes.length && bytes[p] === 0xff) {
+    const m = bytes[p + 1];
+    if (m === 0xda || m === 0xd9) break;
+    if (m === 0xff) { p++; continue; }
+    p += 2 + ((bytes[p + 2] << 8) | bytes[p + 3]);
+    if (p > 250000) return '';
+  }
+  let bin = '';
+  const end = Math.min(p, bytes.length);
+  for (let i = 0; i < end; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + 8192, end)));
+  return btoa(bin);
+}
+
+// Reads a photo. Returns { photo: shrunk JPEG data URL (max 1280 px), meta: camera data of the original }.
 function readPhoto(file) {
   return new Promise((resolve, reject) => {
     if (!/^image\/(jpeg|png)$/.test(file.type)) return reject(new Error('Choose a JPEG or PNG photo.'));
@@ -162,17 +180,27 @@ function readPhoto(file) {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Could not read that photo.'));
     reader.onload = () => {
+      const url = reader.result;
+      let meta = '';
+      try {
+        const raw = atob(url.slice(url.indexOf(',') + 1));
+        const head = new Uint8Array(Math.min(raw.length, 260000));
+        for (let i = 0; i < head.length; i++) head[i] = raw.charCodeAt(i);
+        meta = jpegMeta(head);
+      } catch { /* no camera data */ }
       const img = new Image();
       img.onload = () => {
         const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
         const c = document.createElement('canvas');
         c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        resolve(c.toDataURL('image/jpeg', 0.8));
+        resolve({ photo: c.toDataURL('image/jpeg', 0.8), meta });
       };
       img.onerror = () => reject(new Error('Could not read that photo. Try a JPEG or PNG image.'));
-      img.src = reader.result;
+      img.src = url;
     };
     reader.readAsDataURL(file);
   });
 }
+
+const PHOTO_LABEL = { verified: 'Verified', unverified: 'Not verified', rejected: 'Rejected' };

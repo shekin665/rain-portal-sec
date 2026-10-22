@@ -34,7 +34,7 @@ function routeLevel(reports, sev) {
 function dayAnalysis(day) {
   const sev = getSettings().severity;
   const rows = db.prepare(
-    "SELECT id, user_id, route, issue, photo FROM reports WHERE report_date = ? AND status = 'active'"
+    "SELECT id, user_id, route, issue, (photo_status = 'verified') AS photo FROM reports WHERE report_date = ? AND status = 'active'"
   ).all(day);
   const byRoute = new Map();
   for (const r of rows) {

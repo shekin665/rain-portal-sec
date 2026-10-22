@@ -87,6 +87,17 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 `);
 
+// Add columns that older databases do not have yet.
+function addColumn(table, column, definition) {
+  const have = db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+  if (!have) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+addColumn('reports', 'photo_status', 'TEXT');
+addColumn('reports', 'photo_notes', 'TEXT');
+addColumn('reports', 'photo_lat', 'REAL');
+addColumn('reports', 'photo_lon', 'REAL');
+addColumn('reports', 'photo_taken', 'TEXT');
+
 // Starter values only. The college edits the area list and thresholds in the admin page.
 const DEFAULTS = {
   areas: [
@@ -98,6 +109,9 @@ const DEFAULTS = {
   severity: { minStudents: 3, yellow: 3, orange: 8, red: 15, photoWeight: 1.5, seriousWeight: 1.5 },
   // Area classes: share of students (%) and reports per 100 students.
   areaClass: { shareHigh: 10, rateHigh: 30 },
+  // Photo checks: where and how recent a photo must be to count as verified. The centre is
+  // approximately the college; the college should confirm these values.
+  photoCheck: { centerLat: 13.035, centerLon: 80.18, radiusKm: 35, maxAgeHours: 24 },
   periodDays: 30
 };
 

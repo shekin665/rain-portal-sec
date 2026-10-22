@@ -13,6 +13,52 @@ const { server } = require('../server');
 let pass = 0, fail = 0;
 const ok = (cond, label) => { cond ? pass++ : fail++; console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}`); };
 
+
+// Builds the start of a JPEG that carries EXIF camera data (big-endian), for the photo check tests.
+function makeJpeg({ make, model, software, taken, lat, lon }) {
+  const ents = []; let extra = Buffer.alloc(0);
+  const ascii = (t) => Buffer.from(t + '\0', 'latin1');
+  const rat = (n, d = 1) => { const b = Buffer.alloc(8); b.writeUInt32BE(Math.round(n * d)); b.writeUInt32BE(d, 4); return b; };
+  // Layout: header(8) IFD0 at 8. Out-of-line data is appended after all IFDs; offsets patched below.
+  const ifd0 = [], exif = [], gps = [];
+  const pending = [];
+  const add = (list, tag, type, count, data) => list.push({ tag, type, count, data });
+  if (make) add(ifd0, 0x010f, 2, make.length + 1, ascii(make));
+  if (model) add(ifd0, 0x0110, 2, model.length + 1, ascii(model));
+  if (software) add(ifd0, 0x0131, 2, software.length + 1, ascii(software));
+  if (taken) add(exif, 0x9003, 2, 20, ascii(taken));
+  if (lat != null) {
+    const dms = (v) => { const d = Math.floor(v), m = Math.floor((v - d) * 60), sec = ((v - d) * 60 - m) * 60; return Buffer.concat([rat(d), rat(m), rat(sec, 100)]); };
+    add(gps, 1, 2, 2, Buffer.from('N\0')); add(gps, 2, 5, 3, dms(lat));
+    add(gps, 3, 2, 2, Buffer.from('E\0')); add(gps, 4, 5, 3, dms(lon));
+  }
+  if (exif.length) add(ifd0, 0x8769, 4, 1, Buffer.alloc(4));
+  if (gps.length) add(ifd0, 0x8825, 4, 1, Buffer.alloc(4));
+  ifd0.sort((a, b) => a.tag - b.tag);
+  const ifdSize = (l) => 2 + l.length * 12 + 4;
+  let pos = 8; const at = {};
+  for (const [n, l] of [['ifd0', ifd0], ['exif', exif], ['gps', gps]]) { at[n] = pos; pos += l.length ? ifdSize(l) : 0; }
+  const blobs = []; let dataPos = pos;
+  const build = (l) => {
+    const out = Buffer.alloc(ifdSize(l)); out.writeUInt16BE(l.length, 0);
+    l.forEach((e, i) => {
+      const o = 2 + i * 12; out.writeUInt16BE(e.tag, o); out.writeUInt16BE(e.type, o + 2); out.writeUInt32BE(e.count, o + 4);
+      if (e.tag === 0x8769) out.writeUInt32BE(at.exif, o + 8);
+      else if (e.tag === 0x8825) out.writeUInt32BE(at.gps, o + 8);
+      else if (e.data.length <= 4) e.data.copy(out, o + 8);
+      else { out.writeUInt32BE(dataPos, o + 8); blobs.push(e.data); dataPos += e.data.length; }
+    });
+    return out;
+  };
+  const parts = [build(ifd0)];
+  if (exif.length) parts.push(build(exif));
+  if (gps.length) parts.push(build(gps));
+  const tiff = Buffer.concat([Buffer.from('MM\0*', 'latin1'), Buffer.from([0, 0, 0, 8]), ...parts, ...blobs]);
+  const app1 = Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), tiff]);
+  const len = Buffer.alloc(2); len.writeUInt16BE(app1.length + 2);
+  return Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe1]), len, app1, Buffer.from([0xff, 0xd9])]);
+}
+
 async function main() {
   await new Promise(r => server.listen(0, r));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -55,6 +101,33 @@ async function main() {
   ok(fresh.status === 200, 'student can report a different route');
   ok((await call('POST', '/api/reports', { route: 'Nowhere', mode: 'bus', issue: 'traffic' }, student)).status === 400, 'unknown route is refused');
   ok((await call('POST', '/api/reports', { route: 'Porur', mode: 'bus', issue: 'traffic', photo: 'data:image/png;base64,AAAA' }, student)).status === 400, 'fake image is refused');
+
+
+  // photo checks: camera data is read from the original file and decides if a photo counts as verified
+  const nowIst = () => { const d = new Date(Date.now() + 5.5 * 3600_000 - 60_000); return d.toISOString().slice(0, 19).replace('T', ' ').replace(/-/g, ':').replace(' ', ' '); };
+  const stamp = nowIst().replace(/^(\d{4}):(\d{2}):(\d{2})/, '$1:$2:$3');
+  const shot = makeJpeg({ make: 'Google', model: 'Pixel 8', taken: stamp, lat: 13.0358, lon: 80.1851 });
+  const pic = 'data:image/jpeg;base64,' + Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString('base64');
+  const send = async (routeName, meta) => (await call('POST', '/api/reports', { route: routeName, mode: 'bus', issue: 'waterlogging', photo: pic, photo_meta: meta ? meta.toString('base64') : undefined }, student));
+  let r = await send('Kundrathur', shot);
+  ok(r.status === 200 && r.json.photo_status === 'verified', `camera photo with location in Chennai is verified (${r.json.photo_status} ${r.json.photo_notes})`);
+  r = await send('Poonamallee', makeJpeg({ make: 'Google', model: 'Pixel 8', taken: stamp }));
+  ok(r.status === 200 && r.json.photo_status === 'unverified' && /location/i.test(r.json.photo_notes.join()), 'photo without location is accepted but not verified');
+  r = await send('Vadapalani', makeJpeg({ make: 'Google', model: 'Pixel 8', taken: stamp, lat: 28.61, lon: 77.2 }));
+  ok(r.status === 200 && r.json.photo_status === 'unverified' && /outside/i.test(r.json.photo_notes.join()), 'photo taken far from Chennai is not verified');
+  r = await send('Valasaravakkam', makeJpeg({ make: 'Google', model: 'Pixel 8', taken: '2020:01:01 10:00:00', lat: 13.03, lon: 80.18 }));
+  ok(r.status === 200 && r.json.photo_status === 'unverified' && /ago/i.test(r.json.photo_notes.join()), 'old photo is not verified');
+  r = await send('Virugambakkam', null);
+  ok(r.status === 200 && r.json.photo_status === 'unverified', 'photo with no camera data (screenshot, PNG) is not verified');
+  r = await send('Moulivakkam', makeJpeg({ make: 'Apple', model: 'iPhone 15', software: 'Adobe Photoshop 25.0', taken: stamp, lat: 13.03, lon: 80.18 }));
+  ok(r.status === 400 && /editor/i.test(r.json.error), 'photo saved by Photoshop is rejected');
+  r = await send('Manapakkam', makeJpeg({ software: 'Google Gemini', taken: stamp, lat: 13.03, lon: 80.18 }));
+  ok(r.status === 400 && /generator/i.test(r.json.error), 'photo labelled as made by an image generator is rejected');
+  const ov2 = (await call('GET', '/api/staff/overview', null, coord)).json;
+  const withPhoto = ov2.reports.filter(x => x.photo_status === 'verified');
+  ok(withPhoto.length >= 1 && withPhoto[0].photo_lat != null, 'coordinator sees the verified status and location of a photo');
+  const { dayAnalysis } = require('../logic');
+  ok(typeof dayAnalysis(ov2.day).totalReports === 'number', 'severity analysis still runs with verified photos only');
 
   // few reports cannot raise the level
   const { routeLevel } = require('../logic');

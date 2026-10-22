@@ -71,3 +71,13 @@ To remove the "pilot" line in the footer once the college has authorised the por
 - "PDF summary" is the Summary report page: use the browser's Print, then Save as PDF.
 - Collecting student addresses is personal data. The college's IT or legal team should confirm
   the consent text and retention against India's data protection law before launch.
+
+## Photo checks
+
+A report may include one photo. The page reads the camera data (EXIF) from the original file and sends it with the shrunk picture; the server checks it (`exif.js`):
+
+- **Rejected:** the file was saved by a photo editor (Photoshop, Snapseed and similar) or is labelled as AI-made (generator names, "trainedAlgorithmicMedia" content credentials).
+- **Verified:** camera make and model, a date within the last 24 hours, and a GPS location within 35 km of the college. Only verified photos add the photo weight to a route's score.
+- **Not verified:** anything else (no location, old photo, screenshot, PNG). The report still counts, without the photo weight, and the student is told why.
+
+The coordinator sees the status, the notes and the photo location. Limits: metadata can be rewritten with free tools and is not tied to the picture itself, so this stops casual fakes only. The coordinator stays the final check. Centre, radius and age are in `photoCheck` in `db.js`.
