@@ -1,5 +1,6 @@
 'use strict';
 (async function () {
+  $('#login-logo').append(logoSlot());
   const user = await renderHeader('staffregister');
   if (user) { location.href = user.role === 'student' ? '/student.html' : '/staff.html'; return; }
   $('#form').addEventListener('submit', async (ev) => {

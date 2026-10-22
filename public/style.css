@@ -168,3 +168,8 @@ body.login-page .footer, body.home-page .footer { color: #e6edf7; border-color: 
 .notice p { margin: 0 0 .3rem; }
 .chip { display: inline-block; background: var(--navy); color: #fff; border-radius: 999px; padding: .12rem .7rem; font-size: .75rem; letter-spacing: .04em; }
 body.login-page, body.home-page { background-color: #1d3f6e; }
+
+.login-card.reg-card { max-width: 780px; }
+.login-card .form-grid input, .login-card .form-grid select, .login-card textarea { background: #fff; }
+.login-card label.inline, .login-card .field label { color: #fff; }
+.login-card input[type=checkbox] { width: auto; }
