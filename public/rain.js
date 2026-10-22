@@ -35,7 +35,7 @@
     w = window.innerWidth; h = window.innerHeight;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const count = Math.max(40, Math.min(160, Math.round(w / 9)));
+    const count = Math.max(90, Math.min(420, Math.round(w / 3.5)));
     drops = Array.from({ length: count }, () => makeDrop(true));
   }
 
@@ -44,27 +44,33 @@
     return {
       x: Math.random() * (w + 120) - 60,
       y: anywhere ? Math.random() * h : -20 - Math.random() * 80,
-      len: 8 + depth * 16,
-      speed: 380 + depth * 520,             // pixels per second
-      alpha: 0.12 + depth * 0.2,
-      width: 0.8 + depth * 0.8
+      len: 10 + depth * 24,
+      speed: 600 + depth * 900,             // pixels per second
+      alpha: 0.25 + depth * 0.4,
+      width: 0.9 + depth * 1.3,
+      depth
     };
   }
 
-  const SLANT = 0.22; // horizontal drift per vertical pixel
+  let SLANT = 0.22; // horizontal drift per vertical pixel; it sways a little, like gusts of wind
+const splashes = [];
+// On photo backgrounds (home and sign-in pages) the drops are light; on white pages they are blue.
+const onPhoto = document.body.classList.contains('home-page') || document.body.classList.contains('login-page');
+const DROP = onPhoto ? '225,236,255' : '70,110,175';
 
   function draw(ts) {
     raf = requestAnimationFrame(draw);
     const dt = Math.min(0.05, (ts - (last || ts)) / 1000);
     last = ts;
     g.clearRect(0, 0, w, h);
+    SLANT = 0.22 + 0.12 * Math.sin(ts / 2600) + 0.05 * Math.sin(ts / 700);
 
     if (bolt) {
       const age = (ts - bolt.t0) / 700;
       if (age >= 1) bolt = null;
       else {
         g.save();
-        g.strokeStyle = `rgba(110,130,215,${0.45 * (1 - age)})`;
+        g.strokeStyle = onPhoto ? `rgba(235,240,255,${0.7 * (1 - age)})` : `rgba(110,130,215,${0.45 * (1 - age)})`;
         g.lineWidth = 2; g.lineJoin = 'round'; g.lineCap = 'round';
         g.shadowColor = `rgba(150,170,255,${0.6 * (1 - age)})`; g.shadowBlur = 14;
         for (const path of bolt.paths) {
@@ -79,12 +85,28 @@
     for (const d of drops) {
       d.y += d.speed * dt;
       d.x += d.speed * dt * SLANT;
-      if (d.y > h + 20 || d.x > w + 80) Object.assign(d, makeDrop(false));
-      g.strokeStyle = `rgba(70,110,175,${d.alpha})`;
+      if (d.y > h + 20 || d.x > w + 80) {
+        if (d.depth > 0.55 && splashes.length < 60) splashes.push({ x: d.x, y: h - 2 - Math.random() * 14, t: 0 });
+        Object.assign(d, makeDrop(false));
+      }
+      g.strokeStyle = `rgba(${DROP},${d.alpha})`;
       g.lineWidth = d.width;
       g.beginPath();
       g.moveTo(d.x, d.y);
       g.lineTo(d.x - d.len * SLANT, d.y - d.len);
+      g.stroke();
+    }
+
+    // small ripples where heavy drops land at the bottom of the screen
+    for (let i = splashes.length - 1; i >= 0; i--) {
+      const sp = splashes[i];
+      sp.t += dt;
+      if (sp.t > 0.45) { splashes.splice(i, 1); continue; }
+      const k = sp.t / 0.45;
+      g.strokeStyle = `rgba(${DROP},${0.5 * (1 - k)})`;
+      g.lineWidth = 1;
+      g.beginPath();
+      g.ellipse(sp.x, sp.y, 2 + k * 10, 1 + k * 3, 0, 0, Math.PI * 2);
       g.stroke();
     }
   }
@@ -127,7 +149,7 @@
   let timer = 0;
   function scheduleLightning(first) {
     clearTimeout(timer);
-    const wait = first ? 5000 + Math.random() * 4000 : 20000 + Math.random() * 25000;
+    const wait = first ? 4000 + Math.random() * 3000 : 9000 + Math.random() * 14000;
     timer = setTimeout(() => { lightning(); scheduleLightning(false); }, wait);
   }
 
