@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today's travel status | SRM Easwari Engineering College</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<main>
+  <h1>Today's travel status</h1>
+  <p class="muted" id="today"></p>
+
+  <section class="card" aria-labelledby="status-h">
+    <h2 id="status-h">Confirmed level</h2>
+    <div id="status" class="status-hero"></div>
+    <div id="routes"></div>
+  </section>
+
+  <section class="card" aria-labelledby="notice-h">
+    <h2 id="notice-h">Notices from the college</h2>
+    <div id="notices"></div>
+  </section>
+
+  <section class="card" aria-labelledby="levels-h">
+    <h2 id="levels-h">What the levels mean</h2>
+    <div id="levels"></div>
+  </section>
+
+  <section class="card">
+    <h2>For students</h2>
+    <p>Registered students sign in to report waterlogging, traffic, breakdowns, accidents or near-misses on their route. The college coordinator reviews the reports together with official rain alerts before a level is confirmed.</p>
+    <p><a class="btn" href="/login.html">Sign in to report</a> <a class="btn secondary" href="/register.html">Student registration</a></p>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="/app.js"></script>
+<script src="/rain.js"></script>
+<script src="/page-index.js"></script>
+</body>
+</html>

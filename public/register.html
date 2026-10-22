@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student registration | SRM Easwari Engineering College</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<main>
+  <section class="card" aria-labelledby="h">
+    <h1 id="h">Student registration</h1>
+    <p class="muted">Register once. Your register number and college email must match the college's student roster. Your home area is used to count how many students travel from each area, so the college can plan transport. Only area totals are shown on dashboards.</p>
+    <form id="form" novalidate>
+      <div class="form-grid">
+        <div class="field"><label for="name">Full name</label><input id="name" autocomplete="name" required></div>
+        <div class="field"><label for="register_no">Register number</label><input id="register_no" required></div>
+        <div class="field"><label for="email">College email</label><input id="email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="mobile">Mobile number</label><input id="mobile" type="tel" autocomplete="tel" inputmode="tel"><span class="hint">Used only for urgent alerts.</span></div>
+        <div class="field"><label for="department">Department</label><input id="department" required></div>
+        <div class="field"><label for="year">Year of study</label>
+          <select id="year" required><option value="">Choose</option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+        <div class="field"><label for="area">Home area</label><select id="area" required></select></div>
+        <div class="field"><label for="pincode">Pincode</label><input id="pincode" inputmode="numeric" maxlength="6" autocomplete="postal-code" required></div>
+        <div class="field"><label for="travel_mode">Usual mode of travel</label><select id="travel_mode" required></select></div>
+        <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="new-password" minlength="8" required><span class="hint">At least 8 characters.</span></div>
+      </div>
+      <div class="field"><label for="address">Full home address (optional)</label>
+        <textarea id="address" maxlength="300"></textarea>
+        <span class="hint">Seen only by the portal coordinator and the transport in-charge. Used only if the college arranges a bus pickup route.</span></div>
+      <div class="field"><label><input id="consent" type="checkbox" class="inline"> I agree that the college may use these details only to plan safe travel in the rainy season.</label></div>
+      <div id="msg"></div>
+      <button class="btn" type="submit">Register</button>
+    </form>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="/app.js"></script>
+<script src="/rain.js"></script>
+<script src="/page-register.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change password | SRM Easwari Engineering College</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body data-rain="off">
+<div id="site-header"></div>
+<main hidden>
+  <section class="card" aria-labelledby="h">
+    <h1 id="h">Change password</h1>
+    <p class="muted">Staff passwords need at least 10 characters and student passwords at least 8. Other devices signed in with the old password are signed out.</p>
+    <form id="form" novalidate>
+      <div class="field"><label for="current">Current password</label><input id="current" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="next">New password</label><input id="next" type="password" autocomplete="new-password" required></div>
+      <div class="field"><label for="again">New password again</label><input id="again" type="password" autocomplete="new-password" required></div>
+      <div id="msg"></div>
+      <button class="btn" type="submit">Change password</button>
+    </form>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="/app.js"></script>
+<script src="/rain.js"></script>
+<script src="/page-account.js"></script>
+</body>
+</html>

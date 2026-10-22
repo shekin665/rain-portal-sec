@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Report a travel issue | SRM Easwari Engineering College</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<main hidden>
+  <h1>Report a travel issue</h1>
+  <p class="muted">One report per route per day. Several students must report the same route before a level changes, and the coordinator checks reports against official rain alerts. Deliberate false reports are handled under the college's discipline rules.</p>
+
+  <div class="grid">
+    <section class="card" aria-labelledby="f-h">
+      <h2 id="f-h">New report</h2>
+      <form id="form" novalidate>
+        <div class="field"><label for="route">Route or area you travel through</label><select id="route" required></select></div>
+        <div class="field"><label for="mode">How you are travelling</label><select id="mode" required></select></div>
+        <div class="field"><label for="issue">What happened</label><select id="issue" required></select></div>
+        <div class="field"><label for="note">Details (optional)</label><textarea id="note" maxlength="500"></textarea></div>
+        <div class="field"><label for="photo">Photo (optional)</label><input id="photo" type="file" accept="image/jpeg,image/png"><span class="hint">A photo makes the report count for more. Do not take photos while riding or driving.</span></div>
+        <div id="msg"></div>
+        <button class="btn" type="submit">Submit report</button>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="s-h">
+      <h2 id="s-h">Status today</h2>
+      <div id="status"></div>
+      <p class="small"><a href="/">See all notices</a></p>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="m-h">
+    <h2 id="m-h">My recent reports</h2>
+    <div id="mine"></div>
+  </section>
+</main>
+<div id="site-footer"></div>
+<script src="/app.js"></script>
+<script src="/rain.js"></script>
+<script src="/page-student.js"></script>
+</body>
+</html>
