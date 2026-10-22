@@ -158,17 +158,21 @@ function table(headers, rows, opts) {
 function readPhoto(file) {
   return new Promise((resolve, reject) => {
     if (!/^image\/(jpeg|png)$/.test(file.type)) return reject(new Error('Choose a JPEG or PNG photo.'));
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      resolve(c.toDataURL('image/jpeg', 0.8));
+    // Read as a data: URL (allowed by the page's security policy). blob: URLs are blocked by it.
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that photo.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => reject(new Error('Could not read that photo. Try a JPEG or PNG image.'));
+      img.src = reader.result;
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that photo.')); };
-    img.src = url;
+    reader.readAsDataURL(file);
   });
 }
