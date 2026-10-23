@@ -6,6 +6,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+function safeDecode(v) { try { return decodeURIComponent(v); } catch { return v; } }
 const NOW = "to_char(now() at time zone 'utc','YYYY-MM-DD HH24:MI:SS')";
 
 let query; // (text, params) => { rows, rowCount }
@@ -13,11 +14,15 @@ let query; // (text, params) => { rows, rowCount }
 if (process.env.DATABASE_URL) {
   const { Pool, types } = require('pg');
   types.setTypeParser(20, (v) => Number(v)); // bigint -> number
-  const raw = process.env.DATABASE_URL;
+  const raw = process.env.DATABASE_URL.trim();
   const local = /@(localhost|127\.0\.0\.1)(:|\/)/.test(raw);
-  const url = raw.replace(/([?&])sslmode=[^&]*&?/, '$1').replace(/[?&]$/, '');
+  // Read the address by hand so a password with characters such as @ # & still works unencoded.
+  const m = /^postgres(?:ql)?:\/\/([^:\/@]+):(.*)@([^@\/:]+)(?::(\d+))?\/([^?]*)/.exec(raw);
+  const conn = m
+    ? { user: decodeURIComponent(m[1]), password: safeDecode(m[2]), host: m[3], port: Number(m[4] || 5432), database: m[5] || 'postgres' }
+    : { connectionString: raw.replace(/([?&])sslmode=[^&]*&?/, '$1').replace(/[?&]$/, '') };
   const pool = new Pool({
-    connectionString: url,
+    ...conn,
     ssl: local ? false : { rejectUnauthorized: false },
     max: Number(process.env.DB_POOL_MAX || 3),
     idleTimeoutMillis: 10_000,
