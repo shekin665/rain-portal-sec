@@ -3,11 +3,20 @@
   "version": "1.0.0",
   "description": "Rainy season commute safety portal for SRM Easwari Engineering College, Ramapuram",
   "private": true,
-  "engines": { "node": ">=22.13" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "test": "node --disable-warning=ExperimentalWarning scripts/test.js",
     "demo": "DATA_DIR=./demo-data node --disable-warning=ExperimentalWarning scripts/seed-demo.js && DATA_DIR=./demo-data node --disable-warning=ExperimentalWarning server.js",
     "create-admin": "node --disable-warning=ExperimentalWarning scripts/create-admin.js"
+  },
+  "main": "server.js",
+  "dependencies": {
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17"
   }
 }

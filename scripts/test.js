@@ -130,6 +130,10 @@ async function main() {
   const send = async (routeName, meta) => (await call('POST', '/api/reports', { route: routeName, mode: 'bus', issue: 'waterlogging', photo: pic, photo_meta: meta ? meta.toString('base64') : undefined }, student));
   let r = await send('Kundrathur', shot);
   ok(r.status === 200 && r.json.photo_status === 'verified', `camera photo with location in Chennai is verified (${r.json.photo_status} ${r.json.photo_notes})`);
+  const photoRes = await fetch(base + `/api/staff/photo/${r.json.id}`, { headers: { Cookie: coord } });
+  const photoBytes = Buffer.from(await photoRes.arrayBuffer());
+  ok(photoRes.status === 200 && photoRes.headers.get('content-type') === 'image/jpeg' && photoBytes.equals(Buffer.from([0xff, 0xd8, 0xff, 0xd9])), 'the coordinator can open a stored photo and gets the same bytes back');
+  ok((await fetch(base + `/api/staff/photo/${r.json.id}`, { headers: { Cookie: student } })).status === 403, 'a student cannot open report photos');
   r = await send('Poonamallee', makeJpeg({ make: 'Google', model: 'Pixel 8', taken: stamp }));
   ok(r.status === 200 && r.json.photo_status === 'unverified' && /location/i.test(r.json.photo_notes.join()), 'photo without location is accepted but not verified');
   r = await send('Vadapalani', makeJpeg({ make: 'Google', model: 'Pixel 8', taken: stamp, lat: 28.61, lon: 77.2 }));
@@ -146,7 +150,7 @@ async function main() {
   const withPhoto = ov2.reports.filter(x => x.photo_status === 'verified');
   ok(withPhoto.length >= 1 && withPhoto[0].photo_lat != null, 'coordinator sees the verified status and location of a photo');
   const { dayAnalysis } = require('../logic');
-  ok(typeof dayAnalysis(ov2.day).totalReports === 'number', 'severity analysis still runs with verified photos only');
+  ok(typeof (await dayAnalysis(ov2.day)).totalReports === 'number', 'severity analysis still runs with verified photos only');
 
   // few reports cannot raise the level
   const { routeLevel } = require('../logic');

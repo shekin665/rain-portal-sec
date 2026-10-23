@@ -64,13 +64,40 @@ To remove the "pilot" line in the footer once the college has authorised the por
 - The portal does not send email, so it cannot confirm that a student owns the college email.
   Registration relies on the register number and email both matching the roster. Adding email
   verification needs a mail service.
-- It uses one SQLite file in `data/`. Back that folder up. It suits one college server.
+- It uses one Postgres file in `data/`. Back that folder up. It suits one college server.
 - The starting area list and the thresholds are placeholders. The college should set them.
 - Tamil language support and a weather-service feed are not included. The coordinator enters
   the IMD or Greater Chennai Corporation alert by hand.
 - "PDF summary" is the Summary report page: use the browser's Print, then Save as PDF.
 - Collecting student addresses is personal data. The college's IT or legal team should confirm
   the consent text and retention against India's data protection law before launch.
+
+## Deploy on Vercel with a Supabase database
+
+All data (accounts, roster, reports, photos, notices, audit log) lives in Supabase Postgres, so nothing is lost on a restart or redeploy.
+
+1. **Supabase:** create a project. Choose a region near Chennai (Mumbai or Singapore) and set a strong database password.
+2. In the project press **Connect**, choose **Transaction pooler**, and copy the URI (port 6543). Replace `[YOUR-PASSWORD]` with the database password. This is your `DATABASE_URL`.
+3. **Vercel:** Add New, Project, import the GitHub repository. Leave the build settings alone (`vercel.json` sets them).
+4. Before the first deploy, add these environment variables in Vercel (Settings, Environment Variables):
+
+| Name | Value |
+|---|---|
+| `DATABASE_URL` | the Supabase pooler URI from step 2 |
+| `COOKIE_SECURE` | `1` |
+| `TRUST_PROXY` | `1` |
+| `ADMIN_NAME` | name of the first administrator |
+| `ADMIN_EMAIL` | email of the first administrator |
+| `ADMIN_PASSWORD` | at least 10 characters. Change it on the Password page after the first sign-in. |
+
+5. Deploy. The tables are created automatically on the first request, and the administrator is created from the `ADMIN_*` values when none exists.
+6. Sign in at `/staff-login.html`, import the student roster and the approved staff list, and the portal is ready.
+
+Tables have row security switched on with no policies, so Supabase's public web API returns nothing. Only the server's own database login can read the data. Never put the database password or the Supabase service key in the web pages.
+
+## Run locally
+
+`npm install`, then `npm run demo` starts the portal with fictional demo data in an embedded Postgres (PGlite) under `demo-data/`. `npm test` runs the rule tests. Set `DATABASE_URL` to a local Postgres to test against a real server.
 
 ## Photo checks
 

@@ -31,11 +31,11 @@ function routeLevel(reports, sev) {
   return { level, score: Math.round(score * 10) / 10, students: students.size };
 }
 
-function dayAnalysis(day) {
-  const sev = getSettings().severity;
-  const rows = db.prepare(
-    "SELECT id, user_id, route, issue, (photo_status = 'verified') AS photo FROM reports WHERE report_date = ? AND status = 'active'"
-  ).all(day);
+async function dayAnalysis(day) {
+  const sev = (await getSettings()).severity;
+  const rows = await db.all(
+    "SELECT id, user_id, route, issue, COALESCE(photo_status = 'verified', false) AS photo FROM reports WHERE report_date = ? AND status = 'active'",
+    day);
   const byRoute = new Map();
   for (const r of rows) {
     if (!byRoute.has(r.route)) byRoute.set(r.route, []);
@@ -49,7 +49,7 @@ function dayAnalysis(day) {
     routes.push({ route, reports: list.length, ...res });
   }
   routes.sort((a, b) => LEVELS.indexOf(b.level) - LEVELS.indexOf(a.level) || b.score - a.score);
-  const status = db.prepare('SELECT * FROM day_status WHERE day = ?').get(day) || null;
+  const status = (await db.get('SELECT * FROM day_status WHERE day = ?', day)) || null;
   return { day, suggested, routes, totalReports: rows.length, status };
 }
 
@@ -71,19 +71,19 @@ function checkConfirm(level, officialAlert, alertRef) {
 
 // Area analysis: students per area, share of all students, reports per 100 students,
 // and a class that tells the college where to act first.
-function areaAnalysis(days) {
-  const settings = getSettings();
+async function areaAnalysis(days) {
+  const settings = await getSettings();
   const { shareHigh, rateHigh } = settings.areaClass;
-  const students = db.prepare(
-    "SELECT COALESCE(NULLIF(area,''),'Not given') AS area, COUNT(*) AS n FROM users WHERE role='student' AND active=1 GROUP BY 1"
-  ).all();
+  const students = await db.all(
+    "SELECT COALESCE(NULLIF(area,''),'Not given') AS area, COUNT(*)::int AS n FROM users WHERE role='student' AND active=1 GROUP BY 1"
+  );
   const total = students.reduce((s, r) => s + r.n, 0);
   const since = new Date(Date.now() - days * 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-  const reps = db.prepare(`
-    SELECT COALESCE(NULLIF(u.area,''),'Not given') AS area, COUNT(*) AS n, COUNT(DISTINCT r.user_id) AS reporters
+  const reps = await db.all(`
+    SELECT COALESCE(NULLIF(u.area,''),'Not given') AS area, COUNT(*)::int AS n, COUNT(DISTINCT r.user_id)::int AS reporters
     FROM reports r JOIN users u ON u.id = r.user_id
     WHERE r.status='active' AND r.report_date >= ? GROUP BY 1
-  `).all(since);
+  `, since);
   const repMap = new Map(reps.map(r => [r.area, r]));
   const areas = students.map(s => {
     const r = repMap.get(s.area) || { n: 0, reporters: 0 };

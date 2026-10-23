@@ -1,16 +1,14 @@
-# Render blueprint, TRIAL setup on the free plan.
-# Free plan: no persistent disk, so the SQLite data (accounts, reports) is erased on every restart,
-# redeploy, or when the free service sleeps after idle time. Use it for demonstrations only.
-# For real use: change plan to "starter" and add a disk, then set DATA_DIR to its mount path:
-#   disk: { name: portal-data, mountPath: /var/data, sizeGB: 1 }   and   DATA_DIR=/var/data
+# Render blueprint. Render can also run the portal against the same Supabase database.
+# Set DATABASE_URL (Supabase pooler URI) in the Render dashboard. Without it the portal falls back to an
+# embedded test database on the free plan's disk, which is erased on every restart.
 services:
   - type: web
     name: srm-easwari-rain-portal
     runtime: node
     plan: free
     region: singapore
-    buildCommand: "true"
-    startCommand: node --disable-warning=ExperimentalWarning server.js
+    buildCommand: npm install
+    startCommand: node server.js
     healthCheckPath: /healthz
     envVars:
       - key: NODE_VERSION
@@ -19,6 +17,8 @@ services:
         value: "1"
       - key: TRUST_PROXY
         value: "1"
+      - key: DATABASE_URL
+        sync: false
       - key: ADMIN_NAME
         sync: false
       - key: ADMIN_EMAIL
